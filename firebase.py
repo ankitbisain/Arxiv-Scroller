@@ -9,18 +9,22 @@ cred = credentials.Certificate("firebase.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+
 def id(x):
     return x
 
+
+# sorry im lowk a combinatorialist
 codes_from_subject = {
     "combo": ["CO"],
     "prob": ["PR"],
     "ntag": ["NT", "AG"],
     "anal": ["AP", "CV", "CA", "SP", "DS", "FA"],
-    "topgeo": ["AT", "DG", "MG", "SG", "GT"]
+    "topgeo": ["AT", "DG", "MG", "SG", "GT"],
 }
 
 subjects = codes_from_subject.keys()
+
 
 def db_from_paper(paper, index, date_counts):
     header, title, abstract_preview = paper.preview(id, date_counts, True, 20)
@@ -36,6 +40,7 @@ def db_from_paper(paper, index, date_counts):
         "slides": [preview] + paper.abs_sentences(),
     }
 
+
 for subject in subjects:
     papers = papers_from_codes(codes_from_subject[subject])
     papers.sort(key=lambda x: x.date, reverse=True)
@@ -44,9 +49,9 @@ for subject in subjects:
         date_counts[paper.date] += 1
         paper.index = date_counts[paper.date]
 
-
     db_papers = [
-        db_from_paper(paper, index + 1, date_counts) for (index, paper) in enumerate(papers)
+        db_from_paper(paper, index + 1, date_counts)
+        for (index, paper) in enumerate(papers)
     ]
 
     for db_paper in db_papers:

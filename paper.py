@@ -1,6 +1,11 @@
 import webbrowser
 from datetime import datetime
 from dataclasses import dataclass
+from pylatexenc.latex2text import LatexNodes2Text
+
+
+def compile(txt):
+    return LatexNodes2Text().latex_to_text(txt)
 
 
 @dataclass
@@ -18,7 +23,9 @@ class Paper:
             + f" ({self.index}/{date_counts[self.date]})"
             + (" - " + self.authors if auth else "")
         )
-        display_fn([header, self.title, self.abs_preview(abs_cut)])
+        return display_fn(
+            [header, compile(self.title), compile(self.abs_preview(abs_cut))]
+        )
 
     def abs_preview(self, abs_cut):
         abs_words = self.abstract.split()
@@ -27,8 +34,16 @@ class Paper:
             abs_preview += "..."
         return abs_preview
 
+    def abs_sentences(self):
+        return [
+            compile(line)
+            for line in self.abstract.replace("et al.", "et al")
+            .replace(". ", "...&&&")
+            .split("&&&")
+        ]
+
     def yield_abstract(self, display_fn):
-        sentences = self.abstract.replace(". ", "...&&&").split("&&&")
+        sentences = self.abs_sentences()
         for sentence in sentences:
             display_fn([sentence])
             if input() == "x":
