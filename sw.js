@@ -1,10 +1,9 @@
-const CACHE_NAME = 'slides-cache-v1';
+const CACHE_NAME = 'slides-cache-v2';
 const urlsToCache = [
   '/', 
-  'index.html',
-  // Add your icon files here
-  'icon-192.png',
-  'icon-512.png'
+  'index.html', 
+  'style.css',
+  'subjects.json'
 ];
 
 self.addEventListener('install', event => {

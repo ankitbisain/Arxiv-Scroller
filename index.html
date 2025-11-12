@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1"> 
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="style.css">
 <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -12,96 +13,8 @@
 </script>
 <meta charset="UTF-8">
 <title>Arxiv Scroller</title>
-<style>
-  body {
-    margin: 0;
-    font-family: sans-serif;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000000;
-  }
-  #selection, #card {
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-  #selection {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    background: #6a6a6a; 
-    padding: 40px;
-    text-align: center;
-    width: 90vw;
-    max-width: 400px;
-    box-sizing: border-box;
-  }
-  #selection button {
-    padding: 30px 20px;
-    font-size: 28px;
-    cursor: pointer;
-    border: 2px solid #777;
-    border-radius: 8px;
-    background: #555555;
-    font-family: sans-serif;
-    color: #000000;
-  }
-  
-  #card {
-    width: 90vw;
-    height: 90vh;
-    display: flex; 
-    align-items: center;
-    justify-content: center;
-    background: #555555; 
-    padding: 0;
-    border: none;
-    position: relative;
-  }
 
-  #back-button {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 10;
-    padding: 8px 16px;
-    font-size: 20px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: #000000;
-  }
 
-  #back-button:hover {
-    background: #f0f0f0;
-  }
-
-  #card-content-wrapper {
-    width: 100%; 
-    height: 100%;
-    font-family: monospace;
-    font-size: 22px; 
-    color: #000000;
-    background-color: #555555;
-    padding: 20px; 
-    text-align: left; 
-    display: flex;
-    flex-direction: column;
-    justify-content: center; 
-    gap: 32px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    box-sizing: border-box;
-  }
-
-  #card-content-wrapper a {
-    color: #000000;
-    text-decoration: none; 
-    font-weight: bold; 
-  }
-</style>
-</head>
 <body>
 
 <div id="selection">
@@ -136,8 +49,9 @@ const app = initializeApp({
   projectId: "arxiv-scroller",
   storageBucket: "arxiv-scroller.firebasestorage.app",
   messagingSenderId: "439198707331",
-  appId: "1:439199707331:web:0b07e4fea4a3e1b17275b6"
+  appId: "1:439198707331:web:47cf07fbe25bfcca7275b6"
 });
+
 const db = getFirestore(app);
 
 const selection = document.getElementById('selection');
