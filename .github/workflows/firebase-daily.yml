@@ -2,8 +2,8 @@ name: firebasing daily
 
 on:
   schedule:
+    - cron: '0 5 * * *'  # 12 AM EST
     - cron: '0 13 * * *'  # 8 AM EST
-    - cron: '0 17 * * *'  # 12 PM EST
     - cron: '0 1 * * *'   # 8 PM EST
   workflow_dispatch:
 
@@ -28,4 +28,4 @@ jobs:
       
       - name: Run script
         run: |
-          python firebase.py
+          python update_firebase.py
