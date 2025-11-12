@@ -1,6 +1,7 @@
 import arxiv
 import requests
 from bs4 import BeautifulSoup
+from collections import defaultdict
 
 from paper import Paper
 
@@ -37,4 +38,10 @@ def ids_from_codes(codes):
 def papers_from_codes(codes):
     client = arxiv.Client()
     search = arxiv.Search(id_list=ids_from_codes(codes))
-    return [result_to_paper(result) for result in client.results(search)]
+    papers = [result_to_paper(result) for result in client.results(search)]
+    papers.sort(key=lambda x: x.date, reverse=True)
+    date_counts = defaultdict(int)
+    for paper in papers:
+        date_counts[paper.date] += 1
+        paper.index = date_counts[paper.date]
+    return papers, date_counts

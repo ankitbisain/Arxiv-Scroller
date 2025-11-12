@@ -1,0 +1,8 @@
+{
+  "combo": ["CO"],
+  "prob": ["PR"],
+  "nt": ["NT"],
+  "ag": ["AG"],
+  "anal": ["AP", "CA", "SP", "DS"],
+  "geo": ["DG", "MG"]
+}
