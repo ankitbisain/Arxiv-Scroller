@@ -1,151 +1,158 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1"> 
-    <link rel="manifest" href="appfiles/manifest.json">
-    <link rel="stylesheet" href="appfiles/style.css">
-<script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('appfiles/sw.js');
-      });
-    }
-</script>
-<meta charset="UTF-8">
-<title>Arxiv Scroller</title>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="manifest" href="appfiles/manifest.json" />
+    <link rel="stylesheet" href="appfiles/style.css" />
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("appfiles/sw.js");
+        });
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <title>Arxiv Scroller</title>
+  </head>
 
+  <body>
+    <div id="selection">
+      <button data-subject="combo">combo</button>
+      <button data-subject="prob">prob</button>
+      <button data-subject="nt">nt</button>
+      <button data-subject="misc">misc</button>
+    </div>
 
-<body>
+    <div id="card" style="display: none">
+      <button id="back-button">‹</button>
+      <div id="card-content-wrapper"></div>
+    </div>
 
-<div id="selection">
-</div>
+    <script>
+      const selection = document.getElementById("selection");
+      const card = document.getElementById("card");
+      const cardContent = document.getElementById("card-content-wrapper");
+      const backButton = document.getElementById("back-button");
 
-<script>
-fetch('subjects.json')
-  .then(r => r.json())
-  .then(subjects => {
-    const selection = document.getElementById('selection');
-    for (const [name, codes] of Object.entries(subjects)) {
-      const btn = document.createElement('button');
-      btn.dataset.col = `${name}-papers`;
-      btn.textContent = name;
-      selection.appendChild(btn);
-    }
-  });
-</script>
+      const categories = {
+        combo: ["math.CO"],
+        prob: ["math.PR"],
+        nt: ["math.NT"],
+        misc: ["math.DS", "math.DG", "math.HO"],
+      };
 
-<div id="card" style="display:none">
-    <button id="back-button">‹</button>
-    <div id="card-content-wrapper"></div>
-</div>
+      let papers = [],
+        i = 0,
+        subject = "",
+        next_date = new Date();
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+      function datestr(d) {
+        return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      }
 
-const app = initializeApp({
-  apiKey: "AIzaSyCfHGY9hreV--enSLSl1_KAhpGAX_1EYAs",
-  authDomain: "arxiv-scroller.firebaseapp.com",
-  projectId: "arxiv-scroller",
-  storageBucket: "arxiv-scroller.firebasestorage.app",
-  messagingSenderId: "439198707331",
-  appId: "1:439198707331:web:47cf07fbe25bfcca7275b6"
-});
+      async function load() {
+        const date = datestr(next_date);
+        try {
+          const r = await fetch(`papers/${date}.json`);
+          if (!r.ok) throw new Error();
+          const all = await r.json();
+          const filtered = all.filter((p) =>
+            p.categories?.some((c) => (categories[subject] || []).includes(c))
+          );
+          if (filtered.length === 0) {
+            return [{ type: "no_papers", date: date.slice(5) }];
+          }
+          const tot = filtered.length;
+          return filtered.map((p, idx) => ({
+            ...p,
+            index: idx + 1,
+            tot,
+            type: "paper",
+          }));
+        } catch (e) {
+          return [{ type: "no_papers", date: date.slice(5) }];
+        }
+      }
 
-const db = getFirestore(app);
+      function display(item) {
+        if (item.type === "no_papers") {
+          cardContent.innerHTML = `
+            <p>${item.date}</p>
+            <br><br><br>
+            <h2>No papers found</h2>
+          `;
+        } else {
+          cardContent.innerHTML = `
+            <p>${item.date} (${item.index}/${item.tot})</p>
+            <br><br><br>
+            <h2><a href="${item.link}" target="_blank">${item.title}</a></h2>
+            <br>
+            <p>${item.abstract.split(/\s+/).slice(0, 30).join(" ")}...</p>
+          `;
+        }
+        if (window.MathJax) {
+          MathJax.typesetPromise([cardContent]);
+        }
+      }
 
-const selection = document.getElementById('selection');
-const card = document.getElementById('card');
-const cardContent = document.getElementById('card-content-wrapper');
-const backButton = document.getElementById('back-button');
+      async function show() {
+        if (i >= papers.length) {
+          const more = await load();
+          papers.push(...more);
+          next_date.setDate(next_date.getDate() - 1);
+        }
+        display(papers[i]);
+      }
 
-let col, num = 1, paper, slide = 0;
+      selection.onclick = (e) => {
+        if (e.target.dataset.subject) {
+          subject = e.target.dataset.subject;
+          i = 0;
+          papers = [];
+          next_date = new Date();
+          selection.style.display = "none";
+          card.style.display = "flex";
+          show();
+        }
+      };
 
-async function load() {
-  const snap = await getDoc(doc(db, col, String(num)));
-  if (!snap.exists()) { 
-    num = 1; 
-    return load(); 
-  }
-  paper = snap.data();
-  slide = 0;
-  cardContent.innerHTML = paper.slides[slide];
-}
+      backButton.onclick = (e) => {
+        e.stopPropagation();
+        card.style.display = "none";
+        selection.style.display = "flex";
+      };
 
-function nextSlide() {
-  if (!paper) return;
-  slide = (slide + 1) % paper.slides.length;
-  cardContent.innerHTML = paper.slides[slide];
-}
-
-function prevSlide() {
-  if (!paper) return;
-  slide = (slide - 1 + paper.slides.length) % paper.slides.length;
-  cardContent.innerHTML = paper.slides[slide];
-}
-
-function nextPaper() {
-  num++;
-  load();
-}
-
-function prevPaper() {
-  num = (num > 1) ? num - 1 : 1;
-  load();
-}
-
-function goBack() {
-  card.style.display = 'none';
-  selection.style.display = 'flex';
-  num = 1;
-  slide = 0;
-  paper = null;
-}
-
-selection.onclick = e => {
-  if (e.target.dataset.col) {
-    col = e.target.dataset.col;
-    num = 1;
-    slide = 0;
-    cardContent.innerHTML = '';
-    selection.style.display = 'none';
-    card.style.display = 'flex';
-    load();
-  }
-};
-
-backButton.onclick = e => {
-  e.stopPropagation();
-  goBack();
-};
-
-card.onclick = e => {
-    if (e.target.closest('a') || e.target.id === 'back-button') {
-        return;
-    }
-
-    const cardRect = card.getBoundingClientRect();
-    const clickX = e.clientX - cardRect.left;
-    const clickY = e.clientY - cardRect.top;
-    const cardWidth = cardRect.width;
-    const cardHeight = cardRect.height;
-
-    if (clickY < cardHeight * 0.20) {
-        prevPaper();
-        return; 
-    } 
-    if (clickY > cardHeight * 0.80) {
-        nextPaper();
-        return; 
-    }
-    if (clickX > cardWidth * 0.67){
-        nextSlide();
-    }
-    if (clickX < cardWidth * 0.33){
-        prevSlide();
-    }
-};
-
-</script>
-</body>
+      card.onclick = (e) => {
+        if (e.target.closest("a") || e.target.id === "back-button") return;
+        const y =
+          (e.clientY - card.getBoundingClientRect().top) /
+          card.getBoundingClientRect().height;
+        if (y < 0.2) {
+          i = Math.max(0, i - 1);
+          show();
+        } else if (y > 0.8) {
+          i++;
+          show();
+        }
+      };
+    </script>
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+        },
+        chtml: {
+          scale: 0.85,
+        },
+      };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+  </body>
 </html>

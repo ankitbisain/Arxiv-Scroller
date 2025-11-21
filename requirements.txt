@@ -1,5 +1,3 @@
-firebase-admin
 arxiv
 requests
 beautifulsoup4
-pylatexenc

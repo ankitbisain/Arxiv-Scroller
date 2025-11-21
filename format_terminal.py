@@ -22,7 +22,7 @@ def jump(height):
 def fit_to_screen(pars, margin, color):
     width, height = shutil.get_terminal_size()
     centered_pars = [compile_and_center(par, margin, width) for par in pars]
-    final_text = "\n\n".join(centered_pars)
+    final_text = "\n\n\n".join(centered_pars)
     bottom_margin = "\n" * max(0, (height - len(final_text.split("\n"))) // 2)
     reset_screen(height, color)
     print(final_text + bottom_margin)

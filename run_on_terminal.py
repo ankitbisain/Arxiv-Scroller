@@ -1,36 +1,71 @@
 import sys
+import webbrowser
+from pathlib import Path
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from functools import partial
+import json
 
-from fetcher import papers_from_codes
-from display_terminal import fit_to_screen
+from format_terminal import fit_to_screen
 
-MARGIN = 10
-COLOR = "\033[47m\033[30m"
-DISPLAY_FN = partial(fit_to_screen, margin=MARGIN, color=COLOR)
-ABS_CUT = 20
-DEFAULT_AUTH = False
-CODES = sys.argv[1:]
+FORMAT = partial(fit_to_screen, margin=10, color="\033[47m\033[30m")
+CATEGORIES = [f"math.{code}" for code in sys.argv[1:]]
+DIR = Path(__file__).parent
+TODAY = datetime.now(ZoneInfo("America/New_York")).date()
 
-papers, date_counts = papers_from_codes(CODES)
+
+def load(date):
+    try:
+        with open(DIR / "papers" / f"{date}.json") as f:
+            all = json.load(f)
+        filtered = list(
+            filter(lambda p: any(c in CATEGORIES for c in p.get("categories", [])), all)
+        )
+        tot = len(filtered)
+        if tot:
+            return [
+                {**p, "index": i + 1, "tot": tot, "type": "paper"}
+                for i, p in enumerate(filtered)
+            ]
+        return [{"type": "no_papers", "date": date.strftime("%m-%d")}]
+    except FileNotFoundError:
+        return [{"type": "no_papers", "date": date.strftime("%m-%d")}]
+
+
+def display(paper):
+    if paper["type"] == "no_papers":
+        FORMAT([f"No papers found on {paper["date"]}"])
+    else:
+        header = f"{paper["date"]} ({paper["index"]}/{paper["tot"]})" + "\n"
+        FORMAT(
+            [
+                header,
+                "\033[1m" + paper["title"] + "\033[22m",
+                " ".join(paper["abstract"].split()[:30]) + "...",
+            ]
+        )
+
 
 i = 0
+papers = []
+next_date = TODAY
+
+
+def show():
+    global i, papers, next_date
+    if i >= len(papers):
+        papers.extend(load(next_date))
+        next_date = next_date - timedelta(days=1)
+    display(papers[i])
+
+
 while True:
-    paper = papers[i % len(papers)]
-    auth = DEFAULT_AUTH
-    while True:
-        paper.preview(DISPLAY_FN, date_counts, auth=auth, abs_cut=ABS_CUT)
-        match input():
-            case "m":
-                paper.open()
-            case "c":
-                paper.yield_abstract(DISPLAY_FN)
-            case "a":
-                auth = not auth
-            case "z":
-                i += -1
-                break
-            case "q":
-                sys.exit()
-            case _:
-                i += 1
-                break
+    show()
+    match input():
+        case "m":
+            if papers[i]["type"] == "paper":
+                webbrowser.open(papers[i]["link"])
+        case "z":
+            i = max(0, i - 1)
+        case _:
+            i += 1
